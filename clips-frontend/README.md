@@ -95,6 +95,17 @@ When a processing job completes, users receive browser push notifications (if pe
 - `app/sitemap.ts`: Includes only public marketing pages
 - Public routes: `/`, `/login`, `/privacy`, `/terms`, `/status`
 
+## Stellar Integration
+
+For comprehensive documentation on working with Stellar features, wallet integration, and NFT minting, see [STELLAR.md](./STELLAR.md).
+
+**Key Topics:**
+- Wallet system architecture (MetaMask & Phantom)
+- Connection and session management
+- NFT minting workflow
+- Error handling and best practices
+- Testing and troubleshooting
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

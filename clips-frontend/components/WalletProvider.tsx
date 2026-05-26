@@ -3,6 +3,28 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { secureStorage } from "@/app/lib/secureStorage";
 
+/**
+ * WalletProvider - Manages wallet connections and state for MetaMask and Phantom wallets
+ * 
+ * This provider handles:
+ * - Wallet connection/disconnection for MetaMask (Ethereum/L2s) and Phantom (Solana)
+ * - Session persistence using secure storage
+ * - Event listener management for wallet changes
+ * - Error handling and user feedback
+ * 
+ * Usage:
+ * ```tsx
+ * <WalletProvider>
+ *   <YourApp />
+ * </WalletProvider>
+ * ```
+ * 
+ * Then use the useWallet hook in any component:
+ * ```tsx
+ * const { address, isConnected, connectMetaMask } = useWallet();
+ * ```
+ */
+
 // EIP-1193 provider type (window.ethereum)
 declare global {
   interface Window {
@@ -62,9 +84,30 @@ const WalletContext = createContext<WalletContextType>({
   clearError: () => {},
 });
 
+/**
+ * useWallet - Hook to access wallet state and methods
+ * 
+ * Returns the current wallet context with all state and methods
+ * 
+ * @returns {WalletContextType} Wallet state and methods
+ * 
+ * @example
+ * const { address, isConnected, connectMetaMask } = useWallet();
+ */
 export const useWallet = () => useContext(WalletContext);
 
-/** Truncate a wallet address for display: 0x1234...5678 */
+/**
+ * Truncate a wallet address for display
+ * 
+ * Converts long addresses to shortened format: 0x1234...5678
+ * Useful for displaying addresses in UI without taking up too much space
+ * 
+ * @param {string} address - The wallet address to truncate
+ * @returns {string} Truncated address or original if too short
+ * 
+ * @example
+ * truncateAddress('0x1234567890123456789012345678901234567890') // "0x1234...7890"
+ */
 export function truncateAddress(address: string): string {
   if (address.length < 10) return address;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -75,11 +118,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const stateRef = useRef(state);
 
   // Sync ref with state so event listeners always see latest values
+  // This is necessary because event listeners are set up once and need access to current state
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  // Restore persisted session on mount
+  /**
+   * Restore persisted wallet session on mount
+   * 
+   * Checks secure storage for a previously saved wallet session and restores it
+   * This allows users to remain connected across page refreshes
+   */
   useEffect(() => {
     try {
       secureStorage.getItem(STORAGE_KEY).then((stored) => {
@@ -97,11 +146,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         }
       });
     } catch {
-      // Ignore malformed storage
+      // Ignore malformed storage - user will need to reconnect
     }
   }, []);
 
-  // Listen for MetaMask account / chain changes
+  /**
+   * Listen for MetaMask account and chain changes
+   * 
+   * MetaMask emits events when:
+   * - User switches accounts
+   * - User switches networks
+   * - User disconnects from the app
+   * 
+   * We update state accordingly to keep the UI in sync with wallet state
+   */
   useEffect(() => {
     const ethereum = window.ethereum;
     if (!ethereum) return;
@@ -133,7 +191,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Listen for Solana account changes
+  /**
+   * Listen for Solana/Phantom account changes
+   * 
+   * Phantom emits events when:
+   * - User connects their wallet
+   * - User switches accounts
+   * - User disconnects from the app
+   * 
+   * We update state accordingly to keep the UI in sync with wallet state
+   */
   useEffect(() => {
     const solana = window.solana;
     if (!solana) return;
@@ -169,6 +236,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  /**
+   * Persist wallet session to secure storage
+   * 
+   * Saves wallet connection details so they can be restored on next visit
+   * Only persists if address is present (not on disconnect)
+   * 
+   * @param {Object} data - Wallet data to persist
+   * @param {string|null} data.address - Wallet address
+   * @param {string|null} data.chainId - Current chain ID
+   * @param {WalletType|null} data.walletType - Type of wallet (metamask or phantom)
+   */
   function persistSession(data: { address: string | null; chainId: string | null; walletType: WalletType | null }) {
     if (data.address) {
       secureStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -177,6 +255,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  /**
+   * Handle wallet disconnection
+   * 
+   * Clears all wallet state and removes persisted session
+   * Also calls Phantom's disconnect method if Phantom was connected
+   */
   function handleDisconnect() {
     setState({ ...defaultState });
     secureStorage.removeItem(STORAGE_KEY);
@@ -188,6 +272,22 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  /**
+   * Connect to MetaMask wallet
+   * 
+   * Flow:
+   * 1. Check if MetaMask is installed
+   * 2. Request account access from user
+   * 3. Get current chain ID
+   * 4. Update state with wallet info
+   * 5. Persist session to storage
+   * 
+   * Handles errors:
+   * - MetaMask not installed
+   * - User rejects connection (code 4001)
+   * - No accounts available
+   * - Other connection errors
+   */
   const connectMetaMask = useCallback(async () => {
     if (!window.ethereum || !window.ethereum.isMetaMask) {
       setState((prev: WalletState) => ({
@@ -235,6 +335,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  /**
+   * Connect to Phantom wallet (Solana)
+   * 
+   * Flow:
+   * 1. Check if Phantom is installed
+   * 2. Request connection from user
+   * 3. Get public key and convert to Base58 format
+   * 4. Update state with wallet info
+   * 5. Persist session to storage
+   * 
+   * Handles errors:
+   * - Phantom not installed
+   * - User rejects connection (code 4001)
+   * - Other connection errors
+   */
   const connectPhantom = useCallback(async () => {
     const solana = window.solana;
     if (!solana || !solana.isPhantom) {
@@ -275,10 +390,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  /**
+   * Disconnect from current wallet
+   * 
+   * Clears all wallet state and removes persisted session
+   */
   const disconnect = useCallback(() => {
     handleDisconnect();
   }, [state.walletType]);
 
+  /**
+   * Clear any error messages
+   * 
+   * Useful for dismissing error notifications
+   */
   const clearError = useCallback(() => {
     setState((prev: WalletState) => ({ ...prev, error: null }));
   }, []);
