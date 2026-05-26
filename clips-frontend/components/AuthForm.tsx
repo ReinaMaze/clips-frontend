@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { MockApi } from "../app/lib/mockApi";
+import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MockApi } from "@/app/lib/mockApi";
 
 // Local inline SVG for Google/Apple to avoid external dependencies perfectly matching
 const GoogleIcon = () => (
@@ -23,6 +23,8 @@ interface AuthFormProps {
 export default function AuthForm({ mode = "login" }: AuthFormProps) {
   const { setUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { showToast, ToastEl } = useToast();
 
   const [currentMode, setCurrentMode] = useState<"login" | "signup">(mode);
   const [email, setEmail] = useState("");
@@ -31,6 +33,15 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resetMessage, setResetMessage] = useState(false);
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      showToast("OAuth authentication failed. Please try again.", "error");
+      // Remove error from URL
+      router.replace("/login");
+    }
+  }, [searchParams, showToast, router]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,11 +82,19 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
       </p>
       
       <div className="space-y-[14px] mb-8">
-        <button className="w-full flex items-center justify-center gap-3 bg-surface-hover hover:bg-border border border-border text-white py-3.5 rounded-[12px] font-medium transition-all text-[14px]">
+        <button
+          type="button"
+          onClick={() => signIn("google", { callbackUrl: "/" })}
+          className="w-full flex items-center justify-center gap-3 bg-surface-hover hover:bg-border border border-border text-white py-3.5 rounded-[12px] font-medium transition-all text-[14px]"
+        >
           <GoogleIcon />
           Continue with Google
         </button>
-        <button className="w-full flex items-center justify-center gap-3 bg-surface-hover hover:bg-border border border-border text-white py-3.5 rounded-[12px] font-medium transition-all text-[14px]">
+        <button
+          type="button"
+          onClick={() => signIn("apple", { callbackUrl: "/" })}
+          className="w-full flex items-center justify-center gap-3 bg-surface-hover hover:bg-border border border-border text-white py-3.5 rounded-[12px] font-medium transition-all text-[14px]"
+        >
           <AppleIcon />
           Continue with Apple
         </button>
@@ -105,6 +124,7 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
         <div>
           <label htmlFor="auth-email" className="block text-[13px] font-medium text-[#8e9895] mb-2">Email address</label>
           <input 
+            id="auth-email"
             type="email" 
             required
             value={email}
@@ -126,18 +146,12 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
           />
           {currentMode === "login" && (
             <div className="flex justify-end mt-3">
-              <button
-                type="button"
-                onClick={() => setResetMessage(true)}
+              <Link
+                href="/forgot-password"
                 className="text-brand font-medium hover:underline text-[13px]"
               >
                 Forgot password?
-              </button>
-            </div>
-          )}
-          {resetMessage && currentMode === "login" && (
-            <div className="text-[#8e9895] text-[13px] mt-3 text-right">
-              Password reset coming soon
+              </Link>
             </div>
           )}
         </div>
@@ -161,6 +175,7 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
           <>Already have an account? <button type="button" onClick={() => { setCurrentMode("login"); setResetMessage(false); }} className="text-brand font-medium hover:underline">Sign in</button></>
         )}
       </div>
+      <ToastEl />
     </div>
   );
 }

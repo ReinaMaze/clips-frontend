@@ -10,9 +10,10 @@ interface StatCardProps {
   isPositive?: boolean;
   hideTrendIcon?: boolean;
   icon: LucideIcon;
+  hideTrendIcon?: boolean;
 }
 
-export default function StatCard({ label, value, trend, isPositive = true, hideTrendIcon = false, icon: Icon }: StatCardProps) {
+export default function StatCard({ label, value, trend, isPositive = true, icon: Icon, hideTrendIcon = false }: StatCardProps) {
   return (
     <div className="bg-surface border border-border rounded-[24px] p-8 flex flex-col gap-6 relative overflow-hidden group hover:border-brand/20 transition-all duration-300">
       <div className="flex items-center justify-between">

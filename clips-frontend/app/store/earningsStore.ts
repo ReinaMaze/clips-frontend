@@ -27,31 +27,7 @@ import type {
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-// ─── Mock data (replace with real API call) ───────────────────────────────────
-
-const MOCK_BREAKDOWN: EarningsBreakdownItem[] = [
-  { id: "e1", label: "Apex Legends Clutch Breakdown", amount: 320.5,  date: "2024-03-25", platform: "youtube"   },
-  { id: "e2", label: "React Native Tutorial",         amount: 215.0,  date: "2024-03-24", platform: "tiktok"    },
-  { id: "e3", label: "Valorant Highlights Reel",      amount: 180.75, date: "2024-03-22", platform: "instagram" },
-  { id: "e4", label: "CS2 Pro Tips Series",           amount: 410.0,  date: "2024-03-20", platform: "youtube"   },
-  { id: "e5", label: "Minecraft Build Timelapse",     amount: 95.55,  date: "2024-03-18", platform: "tiktok"    },
-];
-
-async function fetchEarningsFromAPI(): Promise<{
-  totalEarnings: string;
-  totalTrend: number;
-  trendLabel: string;
-  breakdown: EarningsBreakdownItem[];
-}> {
-  // TODO: replace with `fetch('/api/earnings')` when the endpoint is ready
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  return {
-    totalEarnings: "$12,450.80",
-    totalTrend: 12.5,
-    trendLabel: "+12.5% from last month",
-    breakdown: MOCK_BREAKDOWN,
-  };
-}
+import { fetchEarningsFromAPI } from "./api";
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
@@ -59,6 +35,9 @@ const initialState: EarningsState = {
   totalEarnings: "$0.00",
   totalTrend: 0,
   trendLabel: "",
+  totalFiat: { value: "$0.00", change: 0 },
+  cryptoRevenue: { value: "0.00 ETH", change: 0 },
+  pendingPayouts: { value: "$0.00", change: 0 },
   breakdown: [],
   lastFetchedAt: null,
   loading: false,
@@ -90,6 +69,9 @@ export const useEarningsStore = create<EarningsState & EarningsActions>(
           totalEarnings: data.totalEarnings,
           totalTrend: data.totalTrend,
           trendLabel: data.trendLabel,
+          totalFiat: data.totalFiat,
+          cryptoRevenue: data.cryptoRevenue,
+          pendingPayouts: data.pendingPayouts,
           breakdown: data.breakdown,
           lastFetchedAt: Date.now(),
           loading: false,
@@ -115,6 +97,9 @@ export const selectEarningsTotals = (s: EarningsState & EarningsActions) => ({
   totalEarnings: s.totalEarnings,
   totalTrend: s.totalTrend,
   trendLabel: s.trendLabel,
+  totalFiat: s.totalFiat,
+  cryptoRevenue: s.cryptoRevenue,
+  pendingPayouts: s.pendingPayouts,
 });
 
 /** Full breakdown list */

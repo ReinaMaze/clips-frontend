@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState, memo } from "react";
+import React, { useState, memo, useCallback } from "react";
+import Image from "next/image";
 import { 
   Play, 
   Download, 
   Edit, 
   Check,
   Sparkles,
+  X,
+  Zap,
 } from "lucide-react";
 
 interface ClipCardProps {
@@ -18,6 +21,21 @@ interface ClipCardProps {
   isSelected: boolean;
   isRecommended?: boolean;
   onSelect: (id: string) => void;
+  /** Optional callback invoked when the user clicks Edit. */
+  onEdit?: (id: string) => void;
+  /** Optional callback invoked when the user clicks Download. */
+  onDownload?: (id: string) => void;
+  /** Optional callback invoked when the user clicks Preview. */
+  onPreview?: (id: string) => void;
+}
+
+function useToast() {
+  const [toast, setToast] = useState<{ message: string; type: "info" | "success" } | null>(null);
+  const show = useCallback((message: string, type: "info" | "success" = "info") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+  return { toast, show };
 }
 
 const ClipCard = memo(function ClipCard({ 
@@ -28,9 +46,49 @@ const ClipCard = memo(function ClipCard({
   duration, 
   isSelected,
   isRecommended = false,
-  onSelect 
+  onSelect,
+  onEdit,
+  onDownload,
+  onPreview,
 }: ClipCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { toast, show: showToast } = useToast();
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(id);
+    } else {
+      showToast("Clip editor coming soon", "info");
+    }
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDownload) {
+      onDownload(id);
+    } else {
+      // Fallback: open thumbnail in new tab as stand-in until real clip URL is available
+      const a = document.createElement("a");
+      a.href = thumbnail;
+      a.download = `${title.replace(/\s+/g, "_")}.mp4`;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+    showToast("Download started", "success");
+  };
+
+  const handlePreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onPreview) {
+      onPreview(id);
+    } else {
+      showToast("Preview coming soon", "info");
+    }
+  };
 
   const getScoreStyle = (s: number) => {
     if (s >= 90) return "bg-brand border-brand text-black shadow-[0_0_20px_rgba(0,229,143,0.4)]";
@@ -59,14 +117,14 @@ const ClipCard = memo(function ClipCard({
       )}
       {/* Thumbnail Area */}
       <div className={`relative aspect-video overflow-hidden group/thumb ${isRecommended && !isSelected ? "mt-[28px]" : ""}`}>
-        <img 
-          src={thumbnail} 
-          alt={title} 
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110"
+        <Image
+          src={thumbnail}
+          alt={title}
+          fill
+          className="object-cover transform transition-transform duration-700 group-hover:scale-110"
+          sizes="(max-width: 640px) 100vw, 50vw"
         />
-        
+
         {/* Selection Indicator (Top Left) — always visible on touch, hover on desktop */}
         <button
           type="button"
@@ -125,18 +183,49 @@ const ClipCard = memo(function ClipCard({
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button className="p-1.5 text-muted-foreground hover:text-white transition-colors touch-manipulation" title="Edit">
+            <button
+              aria-label="Edit clip"
+              onClick={handleEdit}
+              className="p-1.5 text-muted-foreground hover:text-white transition-colors touch-manipulation"
+              title="Edit"
+            >
               <Edit className="w-4 h-4" />
             </button>
-            <button className="p-1.5 text-muted-foreground hover:text-white transition-colors touch-manipulation" title="Download">
+            <button
+              aria-label="Download clip"
+              onClick={handleDownload}
+              className="p-1.5 text-muted-foreground hover:text-white transition-colors touch-manipulation"
+              title="Download"
+            >
               <Download className="w-4 h-4" />
             </button>
           </div>
-          <button className="text-[11px] font-black text-brand uppercase tracking-widest flex items-center gap-1.5 hover:underline py-1.5 touch-manipulation">
+          <button
+            aria-label="Preview clip"
+            onClick={handlePreview}
+            className="text-[11px] font-black text-brand uppercase tracking-widest flex items-center gap-1.5 hover:underline py-1.5 touch-manipulation"
+          >
             PREVIEW <span className="text-[14px] leading-none mb-0.5">›</span>
           </button>
         </div>
       </div>
+
+      {/* In-card toast */}
+      {toast && (
+        <div className="absolute bottom-4 left-4 right-4 z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border shadow-lg backdrop-blur-md ${
+            toast.type === "success"
+              ? "bg-brand/10 border-brand/30 text-brand"
+              : "bg-[#0C120F]/90 border-white/10 text-white"
+          }`}>
+            {toast.type === "success"
+              ? <Check className="w-3.5 h-3.5 shrink-0" />
+              : <Zap className="w-3.5 h-3.5 shrink-0 text-brand" />
+            }
+            <p className="text-[12px] font-semibold">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

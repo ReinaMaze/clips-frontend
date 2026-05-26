@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import  DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatCard from "@/components/dashboard/StatCard";
@@ -84,7 +85,7 @@ export default function DashboardPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-[20px] font-extrabold text-white tracking-tight">Recent Projects</h3>
-              <button className="text-[14px] font-bold text-brand hover:underline">View All</button>
+              <Link href="/projects" className="text-[14px] font-bold text-brand hover:underline">View All</Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-2">
@@ -92,19 +93,19 @@ export default function DashboardPage() {
                 title="Apex Legends Clutch Moments" 
                 clipsCount={2} 
                 status="processing"
-                thumbnail="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=400&h=400"
+                thumbnail="/projects/thumb1.png"
               />
               <ProjectCard 
                 title="React Native Tutorial 2024" 
                 clipsCount={12} 
                 status="completed"
-                thumbnail="https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=400&h=400"
+                thumbnail="/projects/thumb2.png"
               />
               <ProjectCard 
                 title="Weekly Podcast Highlight #42" 
                 clipsCount={5} 
                 status="completed"
-                thumbnail="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&q=80&w=400&h=400"
+                thumbnail="/projects/thumb3.png"
               />
             </div>
           </div>

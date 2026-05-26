@@ -1,17 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import VaultSidebar from "@/components/vault/VaultSidebar";
 import NFTGrid from "@/components/vault/NFTGrid";
 import MintConfigForm from "@/components/projects/MintConfigForm";
+import { MockApi } from "@/app/lib/mockApi";
 import { ChevronRight } from "lucide-react";
 
 export default function VaultPage() {
+  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<"pending" | "listed" | "history">("pending");
   const [showMintPanel, setShowMintPanel] = useState(false);
+
+  // Simulate loading delay
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleMintSubmit = async (data: {
+    collectionName: string;
+    description: string;
+    creatorRoyalty: string;
+    listingPrice: string;
+  }) => {
+    // Call the actual minting API
+    const result = await MockApi.mintCollection(data);
+    console.log("Minting successful:", result);
+    // You could add additional logic here like showing a toast notification
+    // or updating the NFT grid with the new collection
+    return result;
+  };
 
   return (
     <div className="flex min-h-screen bg-background text-white font-sans overflow-hidden">
@@ -67,7 +89,7 @@ export default function VaultPage() {
             <div className="flex-1 min-w-0 flex flex-col lg:flex-row gap-6">
               {/* NFT Grid */}
               <div className="flex-1 min-w-0">
-                <NFTGrid filter={activeFilter} />
+                <NFTGrid filter={activeFilter} loading={loading} />
               </div>
 
               {/* Mint Configuration Panel (Desktop) */}
@@ -85,7 +107,7 @@ export default function VaultPage() {
 
                   {showMintPanel && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <MintConfigForm />
+                      <MintConfigForm onSubmit={handleMintSubmit} />
                     </div>
                   )}
                 </div>
@@ -103,7 +125,7 @@ export default function VaultPage() {
                 {showMintPanel && (
                   <div className="mt-6 bg-input border border-white/10 rounded-[20px] p-6 animate-in fade-in slide-in-from-top-2 duration-300">
                     <h3 className="text-[18px] font-extrabold text-white mb-6">Mint Configuration</h3>
-                    <MintConfigForm />
+                    <MintConfigForm onSubmit={handleMintSubmit} />
                   </div>
                 )}
               </div>

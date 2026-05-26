@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "../app/lib/mockApi";
 import { useRouter, usePathname } from "next/navigation";
+import { useUserStore } from "@/app/store";
+import { useSession, signOut } from "next-auth/react";
 
 interface AuthContextType {
   user: User | null;
@@ -25,52 +27,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const setProfile = useUserStore((state) => state.setProfile);
+  const clearUser = useUserStore((state) => state.clearUser);
+  const { data: session, status } = useSession();
 
-  useEffect(() => {
-    // Load from local storage on mount
-    const storedUser = localStorage.getItem("clipcash_user");
-    if (storedUser) {
-      try {
-        setUserState(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse stored user", e);
-        localStorage.removeItem("clipcash_user");
-      }
+ useEffect(() => {
+  if (isLoading) return;
+
+  const protectedRoutes = [
+    "/dashboard",
+    "/onboarding",
+    "/earnings",
+    "/projects",
+    "/vault",
+    "/platforms",
+    "/clips",
+  ];
+
+  const isProtectedRoute = protectedRoutes.some(route =>
+    pathname.startsWith(route)
+  );
+
+  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+
+  // 🔐 Not logged in → block protected pages
+  if (!user && isProtectedRoute) {
+    router.push("/login");
+    return;
+  }
+
+  // 🔓 Logged in → prevent going back to auth pages
+  if (user && isAuthRoute) {
+    if (user.onboardingStep === 1 || user.onboardingStep === 2) {
+      router.push("/onboarding");
+    } else {
+      router.push("/dashboard");
     }
-    setIsLoading(false);
-  }, []);
+    return;
+  }
+
+  // 🚫 Prevent accessing onboarding after completion
+  if (user && pathname === "/onboarding" && user.onboardingStep > 2) {
+    router.push("/dashboard");
+  }
+
+}, [user, isLoading, pathname, router]);
 
   const setUser = (newUser: User | null) => {
     setUserState(newUser);
     if (newUser) {
       localStorage.setItem("clipcash_user", JSON.stringify(newUser));
+      // Sync the authenticated user to useUserStore
+      const userProfile = {
+        id: newUser.id,
+        name: newUser.name || newUser.username || "User",
+        email: newUser.email,
+        avatarUrl: null,
+        plan: "pro" as const,
+        planUsagePercent: 80,
+      };
+      setProfile(userProfile);
     } else {
       localStorage.removeItem("clipcash_user");
+      clearUser();
     }
   };
 
   const logout = () => {
+    signOut({ callbackUrl: "/login" });
     setUser(null);
-    router.push("/login");
   };
 
   // Basic routing logic based on auth state
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || status === "loading") return;
 
     const protectedRoutes = ["/dashboard", "/onboarding", "/earnings", "/projects", "/vault", "/platforms", "/clips"];
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
     const isAuthRoute = pathname === "/login" || pathname === "/signup";
 
-    if (user) {
+    if (user || session) {
       if (isAuthRoute || pathname === "/") {
-        if (user.onboardingStep === 1 || user.onboardingStep === 2) {
+        if (user?.onboardingStep === 1 || user?.onboardingStep === 2) {
           router.push("/onboarding");
         } else {
           router.push("/dashboard");
         }
       } else if (pathname === "/onboarding") {
-        if (user.onboardingStep > 2) {
+        if (user?.onboardingStep && user.onboardingStep > 2) {
           router.push("/dashboard");
         }
       }
@@ -79,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push("/login");
       }
     }
-  }, [user, isLoading, pathname, router]);
+  }, [user, session, isLoading, status, pathname, router]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, logout, isLoading }}>
