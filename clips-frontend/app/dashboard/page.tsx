@@ -12,6 +12,7 @@ import ProjectCard from "@/components/dashboard/ProjectCard";
 import EarningsSummaryCards from "@/components/dashboard/EarningsSummaryCards";
 import SendPaymentForm from "@/components/SendPaymentForm";
 import WalletConnectButton from "@/components/WalletConnectButton";
+import WalletInfoCard from "@/components/dashboard/WalletInfoCard";
 import { DollarSign, Video, Globe } from "lucide-react";
 
 export default function DashboardPage() {
@@ -60,6 +61,9 @@ export default function DashboardPage() {
               icon={Globe} 
             />
           </div>
+
+          {/* Wallet Information Card */}
+          <WalletInfoCard />
 
           {/* Earnings Summary Cards */}
           <div className="space-y-4">
