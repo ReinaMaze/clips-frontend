@@ -4,8 +4,9 @@ import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MockApi } from "@/app/lib/mockApi";
+import { useToast } from "@/hooks/useToast";
 
 // Local inline SVG for Google/Apple to avoid external dependencies perfectly matching
 const GoogleIcon = () => (
@@ -145,7 +146,13 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
             className="w-full bg-input border border-border text-white focus:border-brand/70 rounded-[12px] px-4 py-3.5 text-[14px] focus:outline-none focus:bg-surface-hover transition-colors"
           />
           {currentMode === "login" && (
-            <div className="flex justify-end mt-3">
+            <div className="flex justify-between items-center mt-3">
+              <Link
+                href="/recovery"
+                className="text-brand font-medium hover:underline text-[13px]"
+              >
+                Recover wallet?
+              </Link>
               <Link
                 href="/forgot-password"
                 className="text-brand font-medium hover:underline text-[13px]"
