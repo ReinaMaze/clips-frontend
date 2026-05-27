@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Loader2, Wallet, LogOut, AlertCircle, X } from "lucide-react";
+import React, { useState } from "react";
+import { Loader2, Wallet, LogOut, AlertCircle, X, ChevronDown, Coins } from "lucide-react";
 import { useWallet, truncateAddress } from "./WalletProvider";
 import analytics from "@/lib/analytics";
 
@@ -11,8 +11,47 @@ interface WalletConnectButtonProps {
 }
 
 export default function WalletConnectButton({ compact = false }: WalletConnectButtonProps) {
-  const { isConnected, isConnecting, address, error, connectMetaMask, disconnect, clearError } =
-    useWallet();
+  const {
+    isConnected,
+    isConnecting,
+    address,
+    walletType,
+    error,
+    balance,
+    connectMetaMask,
+    connectPhantom,
+    connectStellar,
+    disconnect,
+    clearError,
+  } = useWallet();
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const getWalletIcon = (type: string | null) => {
+    switch (type) {
+      case "metamask":
+        return "🦊";
+      case "phantom":
+        return "👻";
+      case "stellar":
+        return "⚡";
+      default:
+        return "💼";
+    }
+  };
+
+  const getWalletName = (type: string | null) => {
+    switch (type) {
+      case "metamask":
+        return "MetaMask";
+      case "phantom":
+        return "Phantom";
+      case "stellar":
+        return "Stellar";
+      default:
+        return "Wallet";
+    }
+  };
 
   const handleConnect = async () => {
     await connectMetaMask();
@@ -32,17 +71,24 @@ export default function WalletConnectButton({ compact = false }: WalletConnectBu
       <div className="relative flex flex-col items-end gap-2">
         {isConnected && address ? (
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-brand/10 border border-brand/20 rounded-xl px-3 py-2">
-              <div className="w-2 h-2 rounded-full bg-brand shadow-[0_0_6px_rgba(0,229,143,0.8)]" />
-              <span className="text-[12px] font-mono font-bold text-brand">
-                {truncateAddress(address)}
-              </span>
+            <div className="flex items-center gap-2.5 bg-brand/10 border border-brand/20 rounded-xl px-3.5 py-2">
+              <span className="text-[13px]">{getWalletIcon(walletType)}</span>
+              <div className="flex flex-col items-start leading-none">
+                <span className="text-[12px] font-mono font-bold text-brand">
+                  {truncateAddress(address)}
+                </span>
+                {walletType === "stellar" && balance !== null && (
+                  <span className="text-[10px] text-muted-foreground font-semibold mt-0.5">
+                    {parseFloat(balance).toFixed(2)} XLM
+                  </span>
+                )}
+              </div>
             </div>
             <button
               onClick={handleDisconnect}
               title="Disconnect wallet"
               aria-label="Disconnect wallet"
-              className="p-2 rounded-xl bg-white/[0.03] border border-white/5 text-muted-foreground hover:text-red-400 hover:border-red-400/20 transition-all"
+              className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-muted-foreground hover:text-red-400 hover:border-red-400/20 transition-all cursor-pointer active:scale-95"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -59,16 +105,15 @@ export default function WalletConnectButton({ compact = false }: WalletConnectBu
             ) : (
               <Wallet className="w-4 h-4" />
             )}
-            {isConnecting ? "Connecting..." : "Connect Wallet"}
-          </button>
+          </div>
         )}
 
         {/* Inline error toast */}
         {error && (
-          <div className="absolute top-full mt-2 right-0 z-50 flex items-start gap-2 bg-red-950/80 border border-red-500/30 rounded-xl px-4 py-3 max-w-[280px] shadow-xl backdrop-blur-md">
+          <div className="absolute top-full mt-2 right-0 z-50 flex items-start gap-2 bg-red-950/85 border border-red-500/30 rounded-xl px-4 py-3 max-w-[280px] shadow-xl backdrop-blur-md">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
             <p className="text-[12px] text-red-300 leading-snug flex-1">{error}</p>
-            <button onClick={clearError} className="text-red-400 hover:text-red-200 transition-colors shrink-0" aria-label="Close error message">
+            <button onClick={clearError} className="text-red-400 hover:text-red-200 transition-colors shrink-0 cursor-pointer" aria-label="Close error message">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -84,7 +129,7 @@ export default function WalletConnectButton({ compact = false }: WalletConnectBu
         <div className="flex items-start gap-2.5 bg-red-950/60 border border-red-500/25 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <p className="text-[13px] text-red-300 leading-snug flex-1">{error}</p>
-          <button onClick={clearError} className="text-red-400 hover:text-red-200 transition-colors shrink-0" aria-label="Close error message">
+          <button onClick={clearError} className="text-red-400 hover:text-red-200 transition-colors shrink-0 cursor-pointer" aria-label="Close error message">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>

@@ -258,7 +258,13 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
             className="w-full bg-input border border-border text-white focus:border-brand/70 rounded-[12px] px-4 py-3.5 text-[14px] focus:outline-none focus:bg-surface-hover transition-colors"
           />
           {currentMode === "login" && (
-            <div className="flex justify-end mt-3">
+            <div className="flex justify-between items-center mt-3">
+              <Link
+                href="/recovery"
+                className="text-brand font-medium hover:underline text-[13px]"
+              >
+                Recover wallet?
+              </Link>
               <Link
                 href="/forgot-password"
                 className="text-brand font-medium hover:underline text-[13px]"
